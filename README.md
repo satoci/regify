@@ -1,6 +1,6 @@
 # Regify — URL to Regex Checker
 
-**Live tool → [Try Regify](https://satoshi.github.io/regify/)**
+**Live tool → [Try Regify](https://satoci.github.io/regify/)**
 
 A lightweight, browser-based tool that converts any URL into a regex pattern ready to use in GA4, Google Tag Manager, and other analytics platforms — then lets you verify it against test cases instantly.
 
@@ -65,7 +65,7 @@ MIT — free to use, modify, and share.
 
 # Regify — URL → 正規表現チェッカー
 
-**ツールを使う → [Regify を開く](https://satoshi.github.io/regify/)**
+**ツールを使う → [Regify を開く](https://satoci.github.io/regify/)**
 
 URLを貼り付けるだけで、GA4・GTM・各種A/Bテストツールに使える正規表現を即座に生成し、想定通りに動くかをその場で検証できるブラウザ完結型ツールです。
 

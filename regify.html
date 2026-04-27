@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regify — URL to Regex Checker</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f3;
+    --bg3: #eeede9;
+    --text: #1a1a18;
+    --text2: #6b6b67;
+    --text3: #a0a09b;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --success-bg: #eaf3de;
+    --success-text: #3b6d11;
+    --success-border: rgba(59,109,17,0.3);
+    --danger-bg: #fcebeb;
+    --danger-text: #a32d2d;
+    --danger-border: rgba(163,45,45,0.3);
+    --accent: #185fa5;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --mono: 'SF Mono','Fira Mono','Consolas','Menlo',monospace;
+    --sans: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg2: #252522;
+      --bg3: #2e2e2b;
+      --text: #e8e8e2;
+      --text2: #a0a09b;
+      --text3: #6b6b67;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.2);
+      --success-bg: #173404;
+      --success-text: #c0dd97;
+      --success-border: rgba(192,221,151,0.3);
+      --danger-bg: #501313;
+      --danger-text: #f09595;
+      --danger-border: rgba(240,149,149,0.3);
+      --accent: #85b7eb;
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 24px 80px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  /* Header */
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; flex-wrap: wrap; gap: 12px; }
+  .header-left {}
+  .logo { font-size: 22px; font-weight: 600; letter-spacing: -.5px; color: var(--text); }
+  .logo span { color: var(--accent); }
+  .tagline { font-size: 11px; color: var(--text3); margin-top: 3px; letter-spacing: .04em; }
+  .lang-toggle { display: flex; gap: 4px; }
+  .langbtn {
+    font-size: 11px; font-weight: 500; padding: 4px 12px; border-radius: 99px; cursor: pointer;
+    border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text2);
+    transition: background .15s, color .15s;
+  }
+  .langbtn.active { background: var(--bg); color: var(--text); border-color: var(--border2); box-shadow: 0 0 0 1px var(--border2); }
+
+  /* Section label */
+  .slbl { font-size: 10px; font-weight: 600; color: var(--text3); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
+
+  /* Inputs & buttons */
+  input[type="text"] {
+    width: 100%; padding: 8px 12px; border: 0.5px solid var(--border2); border-radius: var(--radius);
+    background: var(--bg); color: var(--text); font-size: 13px; font-family: var(--sans);
+    outline: none; transition: border-color .15s;
+  }
+  input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(24,95,165,0.15); }
+  button {
+    padding: 7px 16px; border-radius: var(--radius); border: 0.5px solid var(--border2);
+    background: var(--bg2); color: var(--text); font-size: 13px; font-family: var(--sans);
+    cursor: pointer; white-space: nowrap; transition: background .15s;
+  }
+  button:hover { background: var(--bg3); }
+  button:active { transform: scale(.98); }
+
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row input { flex: 1; }
+
+  /* Mono input */
+  .mono-input { font-family: var(--mono); font-size: 12px; }
+
+  /* Radio group */
+  .radio-group { display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+  .radio-group span { font-size: 11px; color: var(--text3); }
+  .radio-group label { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); cursor: pointer; }
+  .radio-group input[type="radio"] { accent-color: var(--accent); }
+
+  /* Divider */
+  hr { border: none; border-top: 0.5px solid var(--border); margin: 24px 0; }
+
+  /* Explanation box */
+  .expbox {
+    font-size: 11px; color: var(--text2); line-height: 1.9; padding: 10px 14px;
+    background: var(--bg2); border-radius: var(--radius); margin-top: 8px;
+    border: 0.5px solid var(--border);
+  }
+  .expbox b { font-family: var(--mono); font-weight: 500; color: var(--text); }
+  .errmsg { font-size: 11px; color: var(--danger-text); margin-top: 5px; }
+
+  /* Test cases */
+  .tc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+  .tc-header-left { display: flex; align-items: center; gap: 10px; }
+  .smry { font-size: 12px; color: var(--text2); }
+  .tcrow { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .tcrow input { flex: 1; font-family: var(--mono); font-size: 12px; }
+  .tbtn {
+    flex-shrink: 0; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 500;
+    cursor: pointer; white-space: nowrap; min-width: 64px; text-align: center; border: 0.5px solid;
+    transition: opacity .15s;
+  }
+  .tbtn:hover { opacity: .8; }
+  .tbtn.should { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+  .tbtn.shouldnot { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-border); }
+  .mbtn { flex-shrink: 0; font-size: 11px; padding: 4px 9px; font-family: var(--mono); }
+  .delbtn {
+    flex-shrink: 0; background: none; border: none; cursor: pointer; color: var(--text3);
+    font-size: 18px; line-height: 1; padding: 2px 4px; transition: color .15s;
+  }
+  .delbtn:hover { color: var(--danger-text); }
+  .rb {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%; font-size: 12px; font-weight: 500; flex-shrink: 0;
+  }
+  .rb.pass { background: var(--success-bg); color: var(--success-text); }
+  .rb.fail { background: var(--danger-bg); color: var(--danger-text); }
+  .rb.pend { background: var(--bg3); color: var(--text3); }
+
+  .empty-hint {
+    font-size: 12px; color: var(--text3); text-align: center; padding: 28px;
+    border: 0.5px dashed var(--border2); border-radius: var(--radius);
+  }
+
+  /* Help bar */
+  .helpbar {
+    margin-top: 24px; padding: 10px 14px; background: var(--bg2);
+    border-radius: var(--radius); border: 0.5px solid var(--border); font-size: 11px; color: var(--text3); line-height: 1.7;
+  }
+  .helpbar b { font-weight: 500; color: var(--text2); }
+  .helpbar code { font-family: var(--mono); font-weight: 500; color: var(--text2); }
+
+  /* Footer */
+  .footer { margin-top: 48px; padding-top: 20px; border-top: 0.5px solid var(--border); font-size: 11px; color: var(--text3); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">Re<span>gi</span>fy</div>
+      <div class="tagline" id="tagline">URL → Regex Checker for GA4 / Web Analytics</div>
+    </div>
+    <div class="lang-toggle">
+      <button class="langbtn" id="btnJa" onclick="setLang('ja')">日本語</button>
+      <button class="langbtn active" id="btnEn" onclick="setLang('en')">English</button>
+    </div>
+  </div>
+
+  <!-- Step 1 -->
+  <div style="margin-bottom:20px">
+    <div class="slbl" id="lbl1">Step 1 — Enter the target URL</div>
+    <div class="row">
+      <input id="urlInp" type="text" placeholder="https://example.com/showroom/tokyo/" autocomplete="off" />
+      <button id="genBtn" onclick="handleGen()">Generate</button>
+    </div>
+    <div class="radio-group">
+      <span id="typeLbl">Pattern type:</span>
+      <label><input type="radio" name="mode" value="path" checked onchange="onModeChg()"> <span id="modePathLbl">Path only (recommended for GA4)</span></label>
+      <label><input type="radio" name="mode" value="full" onchange="onModeChg()"> <span id="modeFullLbl">Full URL</span></label>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- Step 2 -->
+  <div style="margin-bottom:20px">
+    <div class="slbl" id="lbl2">Step 2 — Regex pattern (editable)</div>
+    <div class="row">
+      <input id="rxInp" class="mono-input" type="text" placeholder="Enter a URL above and click Generate" oninput="onRxChg()" />
+      <button id="cpyBtn" onclick="doCopy()">Copy</button>
+    </div>
+    <div id="rxErr" class="errmsg" style="display:none">⚠ Regex syntax error</div>
+    <div id="rxExp" class="expbox" style="display:none"></div>
+  </div>
+
+  <hr>
+
+  <!-- Step 3 -->
+  <div>
+    <div class="tc-header">
+      <div class="tc-header-left">
+        <span class="slbl" id="lbl3" style="margin-bottom:0">Step 3 — Test cases</span>
+        <span id="smry" class="smry"></span>
+      </div>
+      <button id="addBtn" onclick="addTC('','should')">+ Add test case</button>
+    </div>
+    <div id="tcList"></div>
+    <div id="emptyHint" class="empty-hint">Enter a URL and click "Generate" to auto-create test cases</div>
+  </div>
+
+  <div class="helpbar">
+    <span id="helpText"><b>How to use:</b> "Match" = URLs the regex should match &nbsp;/&nbsp; "No match" = URLs it should NOT match &nbsp;/&nbsp; <code>+?</code> appends a query param &nbsp;/&nbsp; <code>#</code> appends an anchor &nbsp;/&nbsp; Click the label to toggle type</span>
+  </div>
+
+  <div class="footer">
+    <span>Regify</span>
+    <span id="footerNote">URL → Regex Checker for GA4 / Web Analytics</span>
+  </div>
+
+</div>
+
+<script>
+const T = {
+  ja: {
+    tagline: 'GA4・アクセス解析用 URL → 正規表現チェッカー',
+    lbl1: 'Step 1 — 対象URLを入力',
+    lbl2: 'Step 2 — 正規表現（直接編集も可）',
+    lbl3: 'Step 3 — テスト',
+    genBtn: '生成する', cpyBtn: 'コピー', cpyDone: '✓ コピー済み', addBtn: '+ テストケースを追加',
+    typeLbl: '生成タイプ:',
+    modePath: 'パスのみ（GA4推奨）', modeFull: 'フルURL',
+    rxPlaceholder: 'URLを入力して生成ボタンを押してください',
+    errMsg: '⚠ 正規表現の構文エラーがあります',
+    emptyHint: 'URLを入力して「生成する」を押すと、テストケースが自動作成されます',
+    should: '対象', shouldnot: '対象外', deleteTip: '削除',
+    helpHTML: '<b>使い方:</b> 「対象」= マッチすべきURL &nbsp;/&nbsp; 「対象外」= マッチすべきでないURL &nbsp;/&nbsp; <code>+?</code> でクエリパラメータ付き &nbsp;/&nbsp; <code>#</code> でアンカー付き &nbsp;/&nbsp; ラベルをクリックで種別切替',
+    expParts: ['先頭から一致', 'パスの固定部分', 'クエリパラメータ（? 以降、省略可）', 'アンカー（# 以降、省略可）', '末尾まで一致'],
+    smryUnit: ' パス', footerNote: 'GA4・アクセス解析用 URL → 正規表現チェッカー'
+  },
+  en: {
+    tagline: 'URL → Regex Checker for GA4 / Web Analytics',
+    lbl1: 'Step 1 — Enter the target URL',
+    lbl2: 'Step 2 — Regex pattern (editable)',
+    lbl3: 'Step 3 — Test cases',
+    genBtn: 'Generate', cpyBtn: 'Copy', cpyDone: '✓ Copied', addBtn: '+ Add test case',
+    typeLbl: 'Pattern type:',
+    modePath: 'Path only (recommended for GA4)', modeFull: 'Full URL',
+    rxPlaceholder: 'Enter a URL above and click Generate',
+    errMsg: '⚠ Regex syntax error',
+    emptyHint: 'Enter a URL and click "Generate" to auto-create test cases',
+    should: 'Match', shouldnot: 'No match', deleteTip: 'Remove',
+    helpHTML: '<b>How to use:</b> "Match" = URLs the regex should match &nbsp;/&nbsp; "No match" = URLs it should NOT match &nbsp;/&nbsp; <code>+?</code> appends a query param &nbsp;/&nbsp; <code>#</code> appends an anchor &nbsp;/&nbsp; Click the label to toggle type',
+    expParts: ['Match from start', 'Fixed path segment', 'Query string (?, optional)', 'Fragment / anchor (#, optional)', 'Match to end'],
+    smryUnit: ' passed', footerNote: 'URL → Regex Checker for GA4 / Web Analytics'
+  }
+};
+
+let lang = 'en';
+const S = { regex: '', tcs: [] };
+let nid = 1;
+
+function t(k) { return T[lang][k]; }
+
+function setLang(l) {
+  lang = l;
+  document.getElementById('btnJa').className = 'langbtn' + (l === 'ja' ? ' active' : '');
+  document.getElementById('btnEn').className = 'langbtn' + (l === 'en' ? ' active' : '');
+  applyLang(); renderTcs();
+}
+
+function applyLang() {
+  const L = T[lang];
+  document.getElementById('tagline').textContent = L.tagline;
+  document.getElementById('lbl1').textContent = L.lbl1;
+  document.getElementById('lbl2').textContent = L.lbl2;
+  document.getElementById('lbl3').textContent = L.lbl3;
+  document.getElementById('genBtn').textContent = L.genBtn;
+  document.getElementById('cpyBtn').textContent = L.cpyBtn;
+  document.getElementById('addBtn').textContent = L.addBtn;
+  document.getElementById('typeLbl').textContent = L.typeLbl;
+  document.getElementById('modePathLbl').textContent = L.modePath;
+  document.getElementById('modeFullLbl').textContent = L.modeFull;
+  document.getElementById('rxInp').placeholder = L.rxPlaceholder;
+  document.getElementById('rxErr').textContent = L.errMsg;
+  document.getElementById('emptyHint').textContent = L.emptyHint;
+  document.getElementById('helpText').innerHTML = L.helpHTML;
+  document.getElementById('footerNote').textContent = L.footerNote;
+  showExp(S.regex);
+  updSmry();
+}
+
+function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function eh(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function mkRx(url, mode) {
+  url = url.trim(); if (!url) return '';
+  try {
+    const u = new URL(url);
+    if (mode === 'path') return '^' + esc(u.pathname) + '(\\?[^#]*)?(#.*)?$';
+    return '^' + esc(u.protocol + '//' + u.host + u.pathname) + '(\\?[^#]*)?(#.*)?$';
+  } catch(e) { return '^' + esc(url) + '(\\?[^#]*)?(#.*)?$'; }
+}
+
+function tryRx(rx, url) {
+  if (!rx || !url) return null;
+  try { return new RegExp(rx).test(url); } catch(e) { return null; }
+}
+
+function handleGen() {
+  const url = document.getElementById('urlInp').value.trim();
+  if (!url) return;
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  const rx = mkRx(url, mode);
+  S.regex = rx;
+  document.getElementById('rxInp').value = rx;
+  document.getElementById('rxErr').style.display = 'none';
+  showExp(rx);
+  if (S.tcs.length === 0) autoTcs(url, mode);
+  else renderTcs();
+}
+
+function autoTcs(url, mode) {
+  let base, other;
+  try {
+    const u = new URL(url);
+    if (mode === 'path') {
+      base = u.pathname;
+      const pts = u.pathname.split('/').filter(Boolean);
+      other = pts.length > 1 ? '/' + pts.slice(0,-1).join('/') + '/other/' : '/other/';
+    } else {
+      base = u.protocol + '//' + u.host + u.pathname;
+      other = u.protocol + '//' + u.host + '/other/';
+    }
+  } catch(e) { base = url; other = '/other/'; }
+  const sep = base.includes('?') ? '&' : '?';
+  S.tcs.push({ id: nid++, url: base, type: 'should' });
+  S.tcs.push({ id: nid++, url: base + sep + 'utm_source=google', type: 'should' });
+  S.tcs.push({ id: nid++, url: base + '#section', type: 'should' });
+  S.tcs.push({ id: nid++, url: other, type: 'shouldnot' });
+  renderTcs();
+}
+
+function addTC(url, type) {
+  S.tcs.push({ id: nid++, url: url || '', type: type || 'should' });
+  renderTcs();
+  setTimeout(() => { const ins = document.querySelectorAll('.tcinp'); if (ins.length && !url) ins[ins.length-1].focus(); }, 10);
+}
+
+function rmTC(id) { S.tcs = S.tcs.filter(t => t.id !== id); renderTcs(); }
+
+function togType(id) {
+  const t = S.tcs.find(t => t.id === id);
+  if (t) { t.type = t.type === 'should' ? 'shouldnot' : 'should'; renderTcs(); }
+}
+
+function updUrl(id, url) {
+  const t = S.tcs.find(t => t.id === id);
+  if (t) { t.url = url; updBadge(id); updSmry(); }
+}
+
+function updBadge(id) {
+  const t = S.tcs.find(t => t.id === id);
+  const b = document.getElementById('rb-' + id);
+  if (!t || !b) return;
+  const r = tryRx(S.regex, t.url);
+  if (r === null || !t.url) { b.className = 'rb pend'; b.textContent = '—'; return; }
+  const ok = (t.type === 'should' && r) || (t.type === 'shouldnot' && !r);
+  b.className = 'rb ' + (ok ? 'pass' : 'fail');
+  b.textContent = ok ? '✓' : '✗';
+}
+
+function updSmry() {
+  const el = document.getElementById('smry');
+  const tested = S.tcs.filter(tc => tc.url);
+  if (!tested.length) { el.textContent = ''; return; }
+  const pass = tested.filter(tc => {
+    const r = tryRx(S.regex, tc.url);
+    return r !== null && ((tc.type === 'should' && r) || (tc.type === 'shouldnot' && !r));
+  }).length;
+  el.textContent = pass + '/' + tested.length + t('smryUnit');
+  el.style.color = pass === tested.length && tested.length > 0 ? 'var(--success-text)' : 'var(--text2)';
+}
+
+function addQH(id, typ) {
+  const t = S.tcs.find(t => t.id === id); if (!t) return;
+  let url = t.url;
+  if (typ === 'q') {
+    const hi = url.indexOf('#');
+    const bef = hi !== -1 ? url.slice(0, hi) : url;
+    const aft = hi !== -1 ? url.slice(hi) : '';
+    url = bef + (bef.includes('?') ? '&' : '?') + 'param=value' + aft;
+  } else {
+    if (!url.includes('#')) url += '#anchor';
+  }
+  t.url = url;
+  const inp = document.getElementById('tcinp-' + id);
+  if (inp) inp.value = url;
+  updBadge(id); updSmry();
+}
+
+function onRxChg() {
+  S.regex = document.getElementById('rxInp').value;
+  let valid = true;
+  try { if (S.regex) new RegExp(S.regex); } catch(e) { valid = false; }
+  document.getElementById('rxErr').style.display = S.regex && !valid ? 'block' : 'none';
+  if (valid) showExp(S.regex);
+  S.tcs.forEach(t => updBadge(t.id));
+  updSmry();
+}
+
+function onModeChg() { if (document.getElementById('urlInp').value.trim()) handleGen(); }
+
+function showExp(rx) {
+  const el = document.getElementById('rxExp');
+  if (!rx) { el.style.display = 'none'; return; }
+  const SFX = '(\\?[^#]*)?(#.*)?$';
+  const ep = T[lang].expParts;
+  if (rx.startsWith('^') && rx.endsWith(SFX)) {
+    const mid = rx.slice(1, -SFX.length);
+    el.innerHTML =
+      '<b>^</b> ' + ep[0] + '<br>' +
+      '<b>' + eh(mid) + '</b> ' + ep[1] + '<br>' +
+      '<b>(\\?[^#]*)?</b> ' + ep[2] + '<br>' +
+      '<b>(#.*)?</b> ' + ep[3] + '<br>' +
+      '<b>$</b> ' + ep[4];
+    el.style.display = 'block';
+  } else { el.style.display = 'none'; }
+}
+
+function renderTcs() {
+  const list = document.getElementById('tcList');
+  const hint = document.getElementById('emptyHint');
+  if (!S.tcs.length) { list.innerHTML = ''; hint.style.display = 'block'; updSmry(); return; }
+  hint.style.display = 'none';
+  list.innerHTML = '';
+  S.tcs.forEach(tc => {
+    const r = tryRx(S.regex, tc.url);
+    const ok = r !== null && tc.url ? ((tc.type === 'should' && r) || (tc.type === 'shouldnot' && !r)) : null;
+    const bc = ok === null ? 'pend' : ok ? 'pass' : 'fail';
+    const bt = ok === null ? '—' : ok ? '✓' : '✗';
+    const lbl = tc.type === 'should' ? t('should') : t('shouldnot');
+    const row = document.createElement('div');
+    row.className = 'tcrow';
+    row.innerHTML =
+      '<button class="tbtn ' + tc.type + '" onclick="togType(' + tc.id + ')">' + lbl + '</button>' +
+      '<input id="tcinp-' + tc.id + '" class="tcinp" type="text" value="' + eh(tc.url) + '" placeholder="URL or path" oninput="updUrl(' + tc.id + ',this.value)" />' +
+      '<button class="mbtn" onclick="addQH(' + tc.id + ',\'q\')" title="Append ?param=value">+?</button>' +
+      '<button class="mbtn" onclick="addQH(' + tc.id + ',\'h\')" title="Append #anchor">#</button>' +
+      '<div id="rb-' + tc.id + '" class="rb ' + bc + '">' + bt + '</div>' +
+      '<button class="delbtn" onclick="rmTC(' + tc.id + ')" title="' + t('deleteTip') + '">×</button>';
+    list.appendChild(row);
+  });
+  updSmry();
+}
+
+function doCopy() {
+  const val = document.getElementById('rxInp').value; if (!val) return;
+  navigator.clipboard.writeText(val).then(() => {
+    const b = document.getElementById('cpyBtn');
+    b.textContent = t('cpyDone');
+    setTimeout(() => b.textContent = t('cpyBtn'), 1500);
+  });
+}
+
+document.getElementById('urlInp').addEventListener('keydown', e => { if (e.key === 'Enter') handleGen(); });
+renderTcs();
+</script>
+</body>
+</html>
